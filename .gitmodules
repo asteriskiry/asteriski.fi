@@ -1,0 +1,9 @@
+[submodule "wp-content/plugins/wp-arkisto"]
+	path = wp-content/plugins/wp-arkisto
+	url = git@github.com:asteriskiry/wp-arkisto.git
+[submodule "wp-content/plugins/wp-asteriski-admin-theme"]
+	path = wp-content/plugins/wp-asteriski-admin-theme
+	url = git@github.com:asteriskiry/wp-asteriski-admin-theme.git
+[submodule "wp-content/plugins/wp-asteriski-auto-email"]
+	path = wp-content/plugins/wp-asteriski-auto-email
+	url = git@github.com:asteriskiry/wp-asteriski-auto-email.git
