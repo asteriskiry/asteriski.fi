@@ -1,5 +1,5 @@
 <div class="asap-section" id="asap-section-settings" <?php if ($active_tab != 'settings') { ?>style="display: none;"<?php } ?>>
-    <div class="asap-network-wrap">
+    <div class="asap-network-wrap asap-network-inner-wrap">
         <h4 class="asap-network-title"><?php _e('Facebook Account Details', 'accesspress-facebook-auto-post'); ?></h4>
 
         <?php
@@ -7,40 +7,55 @@
         $account_extra_details = get_option('afap_extra_settings');
         $authorize_status = $account_extra_details['authorize_status'];
         //$this->print_array($account_details);
+        $api_type = (isset($account_details['api_type']) && $account_details['api_type'] != '')?esc_attr($account_details['api_type']):'graph_api';
+        $page_group_lists = (isset($account_details['page_group_lists']) && !empty($account_details['page_group_lists']))?$account_details['page_group_lists']:array();
+         $user_data_arr = (isset($account_details['user_data']) && !empty($account_details['user_data']))?$account_details['user_data']:'';
+         $account_pages_and_groups = $this->account_pages_and_groups($data = 'all_app_users_with_name');
 //        $this->print_array($account_extra_details);
         ?>
         <?php if (isset($_SESSION['asap_message'])) { ?><p class="asap-authorize_note"><?php
             echo $_SESSION['asap_message'];
             unset($_SESSION['asap_message']);
             ?></p><?php } ?>
+    
+    <div class="apfap-graph-api-options">
         <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
             <input type="hidden" name="action" value="afap_fb_authorize_action"/>
             <?php wp_nonce_field('afap_fb_authorize_action', 'afap_fb_authorize_nonce'); ?>
             <input type="submit" name="asap_fb_authorize" value="<?php echo ($authorize_status == 0) ? __('Authorize', 'accesspress-facebook-auto-post') : __('Reauthorize', 'accesspress-facebook-auto-post'); ?>" style="display: none;"/>
         </form>
+    </div>
         <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
             <input type="hidden" name="action" value="afap_form_action"/>
-
             <?php wp_nonce_field('afap_form_action', 'afap_form_nonce') ?>
-            <div class="asap-network-inner-wrap">
-                <?php
+            <?php
                 if ($authorize_status == 0) {
                     ?>
-                    <p class="asap-authorize-note"><?php _e('It seems that you haven\'t authorized your account yet.The auto publish for this account won\'t work until you will authorize.Please authorize using below button', 'accesspress-facebook-auto-post'); ?></p>
+                    <p class="asap-authorize-note apfap-graph-api-options"><?php _e('It seems that you haven\'t authorized your account yet.The auto publish for this account won\'t work until you will authorize.Please authorize using below button', 'accesspress-facebook-auto-post'); ?></p>
                     <?php
                 }
                 ?>
-                <input type="button" class="asap-authorize-btn" id="asap-fb-authorize-ref" value="<?php echo ($authorize_status == 0) ? __('Authorize', 'accesspress-facebook-auto-post') : __('Reauthorize', 'accesspress-facebook-auto-post'); ?>"/>
+                <input type="button" class="asap-authorize-btn apfap-graph-api-options" id="asap-fb-authorize-ref" value="<?php echo ($authorize_status == 0) ? __('Authorize', 'accesspress-facebook-auto-post') : __('Reauthorize', 'accesspress-facebook-auto-post'); ?>"/>
+               
+               <p class="asap-authorize-note apfap-android-api-options"><?php _e('As facebook had made some changes recently,so facebook graph API have few limitation.In such cases, if graph api is not working then please use Facebook Mobile API. This does not have any limitation.', 'accesspress-facebook-auto-post'); ?></p>
+                 
+                <div class="asap-network-field-wrap">
+                    <label><?php _e('Facebook API Type:', 'accesspress-facebook-auto-post'); ?></label>
+                    <div class="asap-network-field">
+                        <label><input class="asfap-apitype" type="radio" value="graph_api" <?php if($api_type == "graph_api") echo "checked";?> name="account_details[api_type]"/><?php _e('Facebook Graph API (Deprecated)','accesspress-facebook-auto-post');?></label>
+                        <label><input class="asfap-apitype" type="radio" value="mobile_api" <?php if($api_type == "mobile_api") echo "checked";?> name="account_details[api_type]"/><?php _e('Facebook Mobile API','accesspress-facebook-auto-post');?></label>
+                    </div>
+                </div>
                 <div class="asap-network-field-wrap">
                     <label><?php _e('Auto Publish', 'accesspress-facebook-auto-post'); ?></label>
                     <div class="asap-network-field"><input type="checkbox" value="1" name="account_details[auto_publish]" <?php checked($account_details['auto_publish'], true); ?>/></div>
                 </div>
-
-                <div class="asap-network-field-wrap">
+                 <!-- facebook graph api options start -->
+                <div class="asap-network-field-wrap apfap-graph-api-options">
                     <label><?php _e('Application ID', 'accesspress-facebook-auto-post'); ?></label>
                     <div class="asap-network-field"><input type="text" name="account_details[application_id]" value="<?php echo isset($account_details['application_id']) ? esc_attr($account_details['application_id']) : ''; ?>"/></div>
                 </div>
-                <div class="asap-network-field-wrap">
+                <div class="asap-network-field-wrap apfap-graph-api-options">
                     <label><?php _e('Application Secret', 'accesspress-facebook-auto-post'); ?></label>
                     <div class="asap-network-field">
                         <input type="text" name="account_details[application_secret]" value="<?php echo isset($account_details['application_secret']) ? esc_attr($account_details['application_secret']) : ''; ?>"/>
@@ -66,7 +81,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="asap-network-field-wrap">
+                <div class="asap-network-field-wrap apfap-graph-api-options">
                     <label><?php _e('Facebook User ID', 'accesspress-facebook-auto-post'); ?></label>
                     <div class="asap-network-field">
                         <input type="text" name="account_details[facebook_user_id]" value="<?php echo isset($account_details['facebook_user_id']) ? esc_attr($account_details['facebook_user_id']) : ''; ?>"/>
@@ -75,6 +90,96 @@
                         </div>
                     </div>
                 </div>
+                <!-- facebook graph api options end -->
+                <!-- facebook andriod api options start -->
+                <div class="asap-network-field-wrap apfap-android-api-options">
+                    <label><?php _e('Account Email Address', 'accesspress-facebook-auto-post'); ?></label>
+                    <div class="asap-network-field">
+                        <input type="text" class="asap-fb-emailid"/>
+                        <div class="asap-field-note">
+                          <p class="description"> <?php _e('Please enter a valid Facebook email address here.', 'accesspress-facebook-auto-post') ?> </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="asap-network-field-wrap apfap-android-api-options">
+                    <label><?php _e('Account Password', 'accesspress-facebook-auto-post'); ?></label>
+                    <div class="asap-network-field">
+                       <input type="password" class="asap-fb-pass"/>
+                       <div class="asap-field-note">
+                       <p class="description"> 
+                        <?php _e('Please enter your facebook password here. Your Facebook account email address and password will not be stored. We only use the password to generate a facebook token to grant permission to post content on yor facebook page.', 'accesspress-facebook-auto-post') ?> 
+                       </p>
+                       </div>
+                    </div>
+                </div>
+                <div class="asap-network-field-wrap apfap-android-api-options">
+                    <label></label>
+                    <div class="asap-network-field">
+                        <a class="button-primary asap-generate-token-btn" href="#" >
+                          <?php _e('Generate Access Token', 'accesspress-facebook-auto-post'); ?>  
+                        </a>
+                        <div class="asap-ajax-loader1"> 
+                         <img src= "<?php echo AFAP_IMG_DIR.'/ajax-loader.gif'; ?>" >  
+                        </div>
+                        <div class="asap-field-note">
+                         <p class="description"> 
+                            <?php _e('Simply fill the email address and password of your facebook account and then click on Generate Token button.', 'accesspress-facebook-auto-post') ?> 
+                         </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="asap-network-field-wrap apfap-android-api-options asap-generated-atwrapper" style="display: none;">
+                    <label></label>
+                    <div class="asap-network-field">
+                        <div class="asap-generated-access-token-wrapper"></div>
+                        <div class="asap-field-note">
+                         <p class="description"> 
+                            <?php _e('Copy all generated value from above and paste it below field.', 'accesspress-facebook-auto-post') ?> 
+                         </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="asap-network-field-wrap apfap-android-api-options">
+                    <label></label>
+                    <div class="asap-network-field">
+                         <textarea id="asap-generated-access-url" class="asap-generated-access-url" rows="4" cols="50" placeholder="<?php _e('Paste copied access token here.', 'accesspress-facebook-auto-post'); ?> "></textarea>
+                    </div>
+                </div>
+
+                <div class="asap-network-field-wrap apfap-android-api-options">
+                    <label></label>
+                    <div class="asap-network-field">
+                        <a class="button-primary asap-add-account-button" href="#" >
+                          <?php _e('Add Account', 'accesspress-facebook-auto-post'); ?>
+                        </a>
+                        <div class="asap-ajax-loader"> 
+                         <img src= "<?php echo AFAP_IMG_DIR.'/ajax-loader.gif'; ?>" >  
+                        </div>
+                        <div id="asap-error-msg"></div>
+                        </div>
+                </div>
+
+                <div class="asap-network-field-wrap apfap-android-api-options">
+                    <label><?php _e('List Of Pages/Groups', 'accesspress-facebook-auto-post'); ?></label>
+                    <div class="asap-network-field">
+                        <select name="account_details[page_group_lists][]" id="asap-button-template-floating" multiple="multiple">
+                           <?php if(!empty($account_pages_and_groups)){
+                             foreach( $account_pages_and_groups as $account_num => $page_title) { ?>
+                                <option value="<?php echo $account_num; ?>" <?php if (in_array($account_num, $page_group_lists)) { ?> selected = "selected" <?php } ?>>
+                                    <?php echo $page_title; ?>
+                                </option>
+                            <?php }
+                              }else{ ?>
+                             <option selected="true" disabled> No any lists available.</option>
+                           <?php  }?>
+                        </select>
+                         <textarea name="account_details[user_data]" id="asap-account-all-json" style="display:none;"><?php echo $user_data_arr;?></textarea>
+                    </div>
+                </div>
+
+
+                 <!-- facebook andriod api options end -->
                 <div class="asap-network-field-wrap">
                     <label><?php _e('Post Message Format', 'accesspress-facebook-auto-post'); ?></label>
                     <div class="asap-network-field">
@@ -96,30 +201,7 @@
                     </div>
                     </div>
                 </div>
-                <?php /*
-                <div class="asap-network-field-wrap">
-                    <label><?php _e('Include Image', 'accesspress-facebook-auto-post'); ?></label>
-                    <div class="asap-network-field">
-                        <label class="asap-full-width"><input type="checkbox" name="account_details[include_image]" <?php if(isset($account_details['include_image'])){checked($account_details['include_image'], true); }?> value="1"/><?php _e('Check if you want to include the image in the post while attaching the blog post.', 'accesspress-facebook-auto-post'); ?></label>
-                    </div>
-                </div>
-                <div class="asap-network-field-wrap">
-                    <label><?php _e('Post Image', 'accesspress-facebook-auto-post'); ?></label>
-                    <div class="asap-network-field">
-                        <select name="account_details[post_image]">
-                            <option value="featured_image" <?php selected($account_details['post_image'], 'featured_image'); ?>><?php _e('Featured Image', 'accesspress-facebook-auto-post'); ?></option>
-                            <option value="custom_image" <?php selected($account_details['post_image'], 'custom_image'); ?>><?php _e('Custom Image', 'accesspress-facebook-auto-post'); ?></option>
-                        </select>
-                    </div>
-                </div>
-                <div class="asap-network-field-wrap asap-custom-image">
-                    <label><?php _e('Custom Image URL', 'accesspress-facebook-auto-post'); ?></label>
-                    <div class="asap-network-field">
-                        <input type="text" name="account_details[custom_image_url]" placeholder="<?php _e('Enter URL of the image here', 'accesspress-facebook-auto-post'); ?>" value="<?php echo esc_attr($account_details['custom_image_url']) ?>"/>
-                    </div>
-                </div>
-                <?php */ ?>
-                <div class="asap-network-field-wrap">
+                <div class="asap-network-field-wrap apfap-graph-api-options">
                     <label><?php _e('Auto Post Pages', 'accesspress-facebook-auto-post'); ?></label>
                     <div class="asap-network-field">
                         <select name="account_details[auto_post_pages][]" multiple="">
@@ -143,11 +225,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
             <?php include('post-settings.php'); ?>
-
         </form>
     </div>
-
 </div>

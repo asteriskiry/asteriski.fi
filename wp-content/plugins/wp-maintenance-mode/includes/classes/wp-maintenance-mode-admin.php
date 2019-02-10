@@ -161,8 +161,9 @@ if (!class_exists('WP_Maintenance_Mode_Admin')) {
 
                 // delete all subscribers
                 $wpdb->query("DELETE FROM {$wpdb->prefix}wpmm_subscribers");
-
-                wp_send_json_success(sprintf(__('You have %d subscriber(s)', $this->plugin_slug), 0));
+		
+				$message = sprintf(_nx('You have %d subscriber', 'You have %s subscribers', 0, 'ajax response',$this->plugin_slug), 0);		
+                wp_send_json_success($message);
             } catch (Exception $ex) {
                 wp_send_json_error($ex->getMessage());
             }
@@ -360,6 +361,7 @@ if (!class_exists('WP_Maintenance_Mode_Admin')) {
                         $_POST['options']['modules']['social_dribbble'] = sanitize_text_field($_POST['options']['modules']['social_dribbble']);
                         $_POST['options']['modules']['social_twitter'] = sanitize_text_field($_POST['options']['modules']['social_twitter']);
                         $_POST['options']['modules']['social_facebook'] = sanitize_text_field($_POST['options']['modules']['social_facebook']);
+                        $_POST['options']['modules']['social_instagram'] = sanitize_text_field($_POST['options']['modules']['social_instagram']);
                         $_POST['options']['modules']['social_pinterest'] = sanitize_text_field($_POST['options']['modules']['social_pinterest']);
                         $_POST['options']['modules']['social_google+'] = sanitize_text_field($_POST['options']['modules']['social_google+']);
                         $_POST['options']['modules']['social_linkedin'] = sanitize_text_field($_POST['options']['modules']['social_linkedin']);
@@ -371,6 +373,7 @@ if (!class_exists('WP_Maintenance_Mode_Admin')) {
 
                         // GOOGLE ANALYTICS
                         $_POST['options']['modules']['ga_status'] = (int) $_POST['options']['modules']['ga_status'];
+						$_POST['options']['modules']['ga_anonymize_ip'] = (int) $_POST['options']['modules']['ga_anonymize_ip'];
                         $_POST['options']['modules']['ga_code'] = wpmm_sanitize_ga_code($_POST['options']['modules']['ga_code']);
 
                         $_POST['options']['modules']['custom_css'] = $custom_css;
@@ -419,6 +422,15 @@ if (!class_exists('WP_Maintenance_Mode_Admin')) {
                             $this->delete_cache();
                         }
                     break;
+                    case 'gdpr':
+                        //$custom_css = array();
+
+                        $_POST['options']['gdpr']['status'] = (int)$_POST['options']['gdpr']['status'];
+                        $_POST['options']['gdpr']['policy_page_label'] = sanitize_text_field($_POST['options']['gdpr']['policy_page_label']);
+                        $_POST['options']['gdpr']['policy_page_link'] = sanitize_text_field($_POST['options']['gdpr']['policy_page_link']);
+						$_POST['options']['gdpr']['policy_page_target'] = (int) $_POST['options']['gdpr']['policy_page_target'];
+                        $_POST['options']['gdpr']['contact_form_tail'] = wp_kses($_POST['options']['gdpr']['contact_form_tail'], wpmm_gdpr_textarea_allowed_html());
+                        $_POST['options']['gdpr']['subscribe_form_tail'] = wp_kses($_POST['options']['gdpr']['subscribe_form_tail'], wpmm_gdpr_textarea_allowed_html());
                 }
 
                 $this->plugin_settings[$tab] = $_POST['options'][$tab];
@@ -446,7 +458,7 @@ if (!class_exists('WP_Maintenance_Mode_Admin')) {
         }
 
         /**
-         * Builds the data.js file and writes it into assets/js/
+         * Builds the data.js file and writes it into uploads
          * This file is mandatory for the bot to work correctly.
          *
          * @param array $messages
@@ -482,7 +494,6 @@ if (!class_exists('WP_Maintenance_Mode_Admin')) {
             // Try to write data.js file
             try {
                 $upload_dir = wp_upload_dir();
-                // if ( file_put_contents( WPMM_PATH . 'assets/js/data.js', $data) === false ){
                 if ( file_put_contents( trailingslashit($upload_dir['basedir']) . 'data.js', $data) === false ){
                     throw new Exception(__("WPMM: The file data.js could not be written, the bot will not work correctly.", $this->plugin_slug));
                 }
@@ -534,7 +545,7 @@ if (!class_exists('WP_Maintenance_Mode_Admin')) {
 
             if ($this->plugin_screen_hook_suffix != $screen->id) {
                 // notice if plugin is activated
-                if ($this->plugin_settings['general']['status'] == 1 && $this->plugin_settings['general']['notice'] == 1) {
+                if (array_key_exists('general', $this->plugin_settings) && $this->plugin_settings['general']['status'] == 1 && $this->plugin_settings['general']['notice'] == 1) {
                     $notices['is_activated'] = array(
                         'class' => 'error',
                         'msg' => sprintf(__('The Maintenance Mode is <strong>active</strong>. Please don\'t forget to <a href="%s">deactivate</a> as soon as you are done.', $this->plugin_slug), admin_url('options-general.php?page=' . $this->plugin_slug))
@@ -628,6 +639,43 @@ if (!class_exists('WP_Maintenance_Mode_Admin')) {
             return $text;
         }
 
+        public function get_is_policy_available() {
+            if (function_exists('get_privacy_policy_url')) {
+                return true;
+            }
+            return false;
+        }
+
+        public function get_policy_link() {
+            //Check feature is available
+            if($this->get_is_policy_available()) {
+                return get_privacy_policy_url();
+            }
+        }
+
+        public function get_policy_link_message() {
+            $url = $this->get_policy_link();
+            if($this->get_is_policy_available() && $this->plugin_settings['gdpr']['policy_page_link'] === '') {
+                if($url === '') { // No value and feature available
+                    return __("Your WordPress version supports Privacy settings but you haven't set any privacy policy page yet. Go to Settings ➡ Privacy to set one.", $this->plugin_slug);
+                }
+                else { // Value and feature available
+                    return sprintf(__('The plugin detected this Privacy page: %1$s – %2$sUse this url%3$s', $this->plugin_slug), $url, '<button>', '</button>');
+                }
+            }
+            elseif($this->get_is_policy_available() && $this->plugin_settings['gdpr']['policy_page_link'] != '') { // Feature available and value set
+                if($url != $this->plugin_settings['gdpr']['policy_page_link']) { // Current wp privacy page differs from set value
+                    return sprintf(__("Your Privacy page is pointing to a different URL in WordPress settings. If that's correct ignore this message, otherwise %s", $this->plugin_slug), 'UPDATE VALUE TO NEW URL');
+                }
+            }
+            elseif(!$this->get_is_policy_available()) { // No privacy feature available
+                return __("No privacy features detected for your WordPress version. Update WordPress to get this field automatically filled in or type in the URL that points to your privacy policy page.", $this->plugin_slug);
+            }
+        }
+    
+    
+    
+    
     }
 
 }

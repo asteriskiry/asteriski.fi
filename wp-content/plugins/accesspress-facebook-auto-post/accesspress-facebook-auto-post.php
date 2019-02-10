@@ -1,19 +1,15 @@
-<?php
-defined('ABSPATH') or die('No script kiddies please!');
+<?php defined('ABSPATH') or die('No script kiddies please!');
 /**
  * Plugin Name: AccessPress Facebook Auto Post
  * Plugin URI: https://accesspressthemes.com/wordpress-plugins/accesspress-facebook-auto-post/
  * Description: A plugin to publish your wordpress posts to facebook profile and fan pages
- * Version: 1.4.2
+ * Version: 2.0.2
  * Author: AccessPress Themes
  * Author URI: http://accesspressthemes.com
  * Text Domain: accesspress-facebook-auto-post
  * Domain Path: /languages/
  * License: GPL2
  */
- 
-
-
 if (!class_exists('AFAP_Class')) {
 
     /**
@@ -46,7 +42,244 @@ if (!class_exists('AFAP_Class')) {
             add_action('save_post', array($this, 'save_afap_meta_value')); //saves meta value 
             add_action('future_to_publish', array($this, 'auto_post_schedule')); 
             add_action(  'transition_post_status',  array($this,'auto_post'), 10, 3 );
+
+             // Facebook Mobile API: Ajax Action for generating Access Token from given Email and Password
+            add_action('wp_ajax_asfap_access_token_ajax_action', array($this, 'asfap_access_token_ajax_action'));
+            add_action('wp_ajax_nopriv_asfap_access_token_ajax_action', array($this, 'asfap_access_token_ajax_action'));
+            // Ajax Action for getting the list of all the pages and groups associated with the email address
+            add_action('wp_ajax_asfap_add_account_action', array($this, 'asfap_add_account_action'));
+            add_action('wp_ajax_nopriv_asfap_add_account_action', array($this, 'asfap_add_account_action'));
             
+        }
+
+        /*
+        * Start Generating Access Token 
+        */
+        public function asfap_access_token_ajax_action(){
+            if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'apfap_backend_ajax_nonce')) {
+                // $fbfor =sanitize_text_field($_POST['fbfor']);
+                $fb_email =sanitize_text_field($_POST['fb_email']);
+                $fb_password = sanitize_text_field($_POST['fb_password']);
+
+                if( !empty( $fb_email ) && !empty($fb_password ) ) {
+                    $token_url = $this->get_token_url($fb_email , $fb_password);
+                    if( $token_url != false ) {
+                        $response = array(
+                            'type' => 'success',
+                            'message' => $token_url
+                        );
+                    }
+                } else{
+                    $response = array(
+                        'type' => 'error',
+                        'message' => __( 'Please provide your facebook Username and Password.', 'accesspress-facebook-auto-post' )
+                    );
+                }
+                wp_send_json($response);
+                exit;
+            }
+        }
+
+        /*
+        * Generating Access Token For Android and iPhone using Email Id and Password
+        */
+         function get_token_url($fb_email, $fb_password){
+             $credentials = array();
+             $apps = array( 
+                '951357852456' => array(
+                            "api_key" => "882a8490361da98702bf97a021ddc14d", //API key for FB android app
+                            "api_secret" => "62f8ce9f74b12f84c123cc23437a4a32" //APP Secret for FB android app
+                        )
+             );
+           
+            $default_app = '951357852456'; // Name of the page we created. However, also works with any random numbers because this value is not used anywhere.
+            $credentials = $apps[$default_app];
+
+            $sig = md5("api_key=".$credentials['api_key']."credentials_type=passwordemail=".trim($fb_email)."format=JSONgenerate_machine_id=1generate_session_cookies=1locale=en_USmethod=auth.loginpassword=".trim($fb_password)."return_ssl_resources=0v=1.0".$credentials['api_secret']);
+
+            $fb_token_url = "https://api.facebook.com/restserver.php?api_key=".$credentials['api_key']."&credentials_type=password&email=".urlencode(trim($fb_email))."&format=JSON&generate_machine_id=1&generate_session_cookies=1&locale=en_US&method=auth.login&password=".urlencode(trim($fb_password))."&return_ssl_resources=0&v=1.0&sig=".$sig;
+
+            return $fb_token_url;
+        }
+
+        public function asfap_add_account_action(){
+             if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'apfap_backend_ajax_nonce')) {
+                 $token_url = sanitize_text_field($_POST['token_url']);
+                 $token_response = array();
+                if(!empty($token_url)){
+                    $fb_token = stripslashes($token_url);
+                    $token_response = $this->asap_add_account($fb_token);
+                    if( !empty($token_response) ) {
+                         $response =  
+                        array(
+                            'type'=> 'success',
+                            'result' => $token_response,
+                            'message' => __('Your account added successfully.', 'accesspress-facebook-auto-post')
+                        );
+                    } 
+                    else{
+                        $response = array(
+                            'type' => 'error',
+                            'message' =>  __('Invalid access token/User data not found.', 'accesspress-facebook-auto-post')
+                        );
+                    }
+                } else{
+                    $response = array(
+                        'type' => 'error',
+                        'message' => __( 'Please enter the access token.', 'accesspress-facebook-auto-post' )
+                    );
+                }
+                 wp_send_json($response);
+            }
+        }
+
+        public function asap_add_account($fb_token) {
+            $fb_sess_data = array();
+            $asap_user_details = array();
+            $user_accounts = array();
+            $token_result = json_decode($fb_token);
+            if( isset( $token_result->error_msg ) ){
+                $error = $token_result->error_msg;
+                return false;
+            }
+            elseif ( empty( $token_result ) ) {
+                return false;
+            }
+            $user_app_secret = $token_result->secret;
+            $user_accounts = $this->asap_get_user_accounts($token_result); 
+
+            if(!empty($user_accounts)) {
+                $fb_sess_data = 
+                 array(
+                    'fap_user_cache' => array(
+                                        'name' => $user_accounts['fb_user_name'],
+                                        'id' => $user_accounts['fb_user_id'],
+                    ),
+                    'fap_user_id' => $user_accounts['fb_user_id'],
+                    'fap_user_accounts' => $user_accounts,
+                ); 
+                $asap_user_details = $fb_sess_data;
+                return $asap_user_details;
+            }
+            return false;
+        }
+
+        function asap_get_user_accounts($token_result) {
+            require_once( AFAP_PLUGIN_PATH . '/Facebook/Facebook_API.php' );
+            $asap_facebook_api = new AFAP_REST_API();
+            $user_accounts  = array();
+
+            if( empty( $token_result ) || empty( $token_result->access_token)){
+                return false;
+            }
+
+            $access_token = $token_result->access_token;
+            $userData   = $this->asap_get_user_data($access_token, $asap_facebook_api);
+            $userPages  = $this->asap_get_page_data($access_token, $asap_facebook_api);
+            $userGroups = $this->asap_get_group_data($access_token, $asap_facebook_api);
+
+            if( !empty( $userData ) && $userData ) {
+                $facebook_user = $userData;
+                $user_accounts['fb_user_name']= $userData->name ;
+                $user_accounts['fb_user_id']= $userData->id ;
+
+                $user_accounts['auth_accounts'][$userData->id] = $userData->name.' ('.$userData->id.')';
+                $user_accounts['auth_tokens'][$userData->id] = $access_token;
+            }
+
+            if( !empty( $userPages ) && $userPages ) {
+                foreach ( $userPages as $key => $page ) {
+                    $user_accounts['auth_accounts'][$page->id] = $page->name;
+                    $user_accounts['auth_tokens'][$page->id] = ( isset( $page->access_token)) ? $page->access_token : $access_token;
+                }
+            }
+
+            if( !empty( $userGroups ) && $userGroups ) {
+                foreach ( $userGroups as $key => $group ) {
+                    $user_accounts['auth_accounts'][$group->id] = $group->name . ' ('.$group->privacy.')';
+                    $user_accounts['auth_tokens'][$group->id] = $access_token;
+                }
+            }
+            return $user_accounts;
+        }
+
+         function asap_get_group_data($access_token, $asap_facebook_api, $limit = 1000 ){
+            $asap_facebook_api->setApiVersion('v2.9');
+            $asap_facebook_api->setNode('me');
+            $asap_facebook_api->setEndPoint('groups');
+            $asap_facebook_api->setAccessToken($access_token);
+
+            $params = array(
+                'fields'=> 'id,name,privacy,members.summary(total_count).limit(0)',
+                'limit' => $limit,
+            );
+
+            $rawResponse = $asap_facebook_api->request($params);
+
+            if( $rawResponse ) {
+                $res = json_decode( $rawResponse->getBody());
+            } else{
+                return false;
+            }
+
+            if(isset($res->error)){
+                $error = $res->error->message;
+                return false; 
+            }
+
+            $groups = (array)$res->data;
+
+            return $groups;
+        }
+
+        function asap_get_page_data( $access_token, $asap_facebook_api, $limit = 500 ){
+            $p = $limit > 99 ? $limit / 100 : 1;
+            $limit = $limit > 100 ? 100 : $limit;
+            $pages = array();
+
+            $params = array(
+                'fields'=> 'id,name,likes,access_token',
+                'limit' => $limit,
+            );
+
+            for ($i=0; $i<$p ; $i++) {
+
+                $asap_facebook_api->setApiVersion('v2.3');
+                $asap_facebook_api->setNode('me');
+                $asap_facebook_api->setEndPoint('accounts');
+                $asap_facebook_api->setAccessToken($access_token);
+
+                if($rawResponse = $asap_facebook_api->request($params)){
+                    $res = json_decode($rawResponse->getBody());
+                    if(isset($res->data)){
+                        if(!empty($res->data)){
+                            $pages = array_merge($pages,$res->data);
+                            if(isset($res->paging->cursors->after)){
+                                $params['after'] = $res->paging->cursors->after;
+                                continue;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+            return $pages;
+        }
+
+      function asap_get_user_data($access_token, $asap_facebook_api){
+            $asap_facebook_api->setNode("me");
+            $asap_facebook_api->setMethod("get");
+            $asap_facebook_api->setAccessToken($access_token);
+
+            $params =  array('fields'=>'id,name,first_name,last_name');
+            $rawResponse = $asap_facebook_api->request($params);
+            $res = json_decode($rawResponse->getBody());
+            
+            if(isset($res->error)){
+                $error = $res->error->message;
+                return false;
+            }
+            return $res;
         }
         
         /**
@@ -63,7 +296,7 @@ if (!class_exists('AFAP_Class')) {
                 define('AFAP_JS_DIR', plugin_dir_url(__FILE__) . 'js');
             }
             if (!defined('AFAP_VERSION')) {
-                define('AFAP_VERSION', '1.4.2');
+                define('AFAP_VERSION', '2.0.2');
             }
             if (!defined('AFAP_TD')) {
                 define('AFAP_TD', 'accesspress-facebook-auto-post');
@@ -71,7 +304,10 @@ if (!class_exists('AFAP_Class')) {
             if (!defined('AFAP_PLUGIN_FILE')) {
                 define('AFAP_PLUGIN_FILE', __FILE__);
             }
-            
+            if (!defined('AFAP_PLUGIN_PATH')) {
+                define('AFAP_PLUGIN_PATH', plugin_dir_path(__FILE__).'api/facebook-mobile');
+            }
+                        
             if (!defined('AFAP_API_VERSION')) {
                 define('AFAP_API_VERSION', 'v2.0');
             }
@@ -181,6 +417,10 @@ if (!class_exists('AFAP_Class')) {
                 wp_enqueue_style('apsp-fontawesome-css', AFAP_CSS_DIR.'/font-awesome.min.css', AFAP_VERSION);
                 wp_enqueue_style('afap-admin-css', AFAP_CSS_DIR . '/admin-style.css', array(), AFAP_VERSION);
                 wp_enqueue_script('afap-admin-js', AFAP_JS_DIR . '/admin-script.js', array('jquery'), AFAP_VERSION);
+               $ajax_js_obj = array('ajax_url' => admin_url('admin-ajax.php'),
+                                'ajax_nonce' => wp_create_nonce('apfap_backend_ajax_nonce')
+                               );
+                wp_localize_script('afap-admin-js', 'asfap_backend_js_obj', $ajax_js_obj);
             }
         }
 
@@ -208,7 +448,6 @@ if (!class_exists('AFAP_Class')) {
          * Action to authorize the facebook
          */
         function fb_authorize_action() {
-//die('reached');
             if (!empty($_POST) && wp_verify_nonce($_POST['afap_fb_authorize_nonce'], 'afap_fb_authorize_action')) {
                 include('inc/cores/fb-authorization.php');
             } else {
@@ -260,6 +499,7 @@ if (!class_exists('AFAP_Class')) {
                 $auto_post = $_POST['afap_auto_post'];
                 if ($auto_post == 'yes' || $auto_post == '') {
                     include_once('api/facebook.php'); // facebook api library
+                    include_once( AFAP_PLUGIN_PATH . '/Facebook/Facebook_API.php' );
                     include('inc/cores/auto-post.php');
                     $check = update_post_meta($post->ID, 'afap_auto_post', 'no');
                     $_POST['afap_auto_post'] = 'no';
@@ -271,6 +511,7 @@ if (!class_exists('AFAP_Class')) {
             $auto_post = get_post_meta($post->ID,'afap_auto_post',true);
             if ($auto_post == 'yes' || $auto_post == '') {
                 include_once('api/facebook.php'); // facebook api library
+                include_once( AFAP_PLUGIN_PATH . '/Facebook/Facebook_API.php' );
                 include('inc/cores/auto-post.php');
                 $check = update_post_meta($post->ID, 'afap_auto_post', 'no');
                 $_POST['afap_auto_post'] = 'no';
@@ -342,8 +583,8 @@ if (!class_exists('AFAP_Class')) {
             <label for="afap_auto_post"><?php _e('Enable Auto Post', 'accesspress-facebook-auto-post'); ?></label>
             <p>
                 <select name="afap_auto_post">
-                    <option value="yes" ><?php _e('Yes', 'accesspress-facebook-auto-post'); ?></option>
-                    <option value="no" selected="selected"><?php _e('No', 'accesspress-facebook-auto-post'); ?></option>
+                    <option value="yes" <?php selected($auto_post, 'yes'); ?>><?php _e('Yes', 'accesspress-facebook-auto-post'); ?></option>
+                    <option value="no" <?php selected($auto_post, 'no'); ?>><?php _e('No', 'accesspress-facebook-auto-post'); ?></option>
                 </select>
             </p>
             <?php
@@ -406,12 +647,42 @@ if (!class_exists('AFAP_Class')) {
             wp_redirect('admin.php?page=afap');
             exit();
         }
+
+         function account_pages_and_groups($data) {
+            $account_details = get_option('afap_settings');
+             $asap_user_details = array();
+            if (!empty($account_details)) {
+                $page_group_lists = (isset($account_details['page_group_lists']) && !empty($account_details['page_group_lists']))?$account_details['page_group_lists']:array();
+                $user_data_arr = (isset($account_details['user_data']) && !empty($account_details['user_data']))?$account_details['user_data']:array();
+                if(!empty($user_data_arr)){
+                    $asap_user_details = json_decode( $user_data_arr ,TRUE);
+                }
+            }
+            if( is_array($asap_user_details) && !empty($asap_user_details) ) {
+                foreach ($asap_user_details as $fb_sess_data) {
+                  
+             $fb_sess_acc = isset( $fb_sess_data['auth_accounts'] ) ? $fb_sess_data['auth_accounts'] : array(); 
+             $fb_sess_token = isset( $fb_sess_data['auth_tokens'] ) ? $fb_sess_data['auth_tokens'] : array(); 
+                    // Loop of account and merging with page id and app key
+                    if($data == "all_app_users_with_name"){
+                        foreach ( $fb_sess_acc as $fb_page_id => $fb_page_name ) {
+                            $res_data[$fb_page_id] = $fb_page_name;
+                        }
+                    }
+                    elseif($data == "all_auth_tokens"){
+                        foreach ( $fb_sess_token as $fb_sess_token_id => $fb_sess_token_data ) {
+                            $res_data[$fb_sess_token_id] = $fb_sess_token_data;
+                        }
+                    }
+                }
+            }
+
+            if(!empty($res_data)){
+                return $res_data;
+            }
+        }
         
-        	
-        	
-
     }
-
     $afap_obj = new AFAP_Class();
 }// class Termination
 

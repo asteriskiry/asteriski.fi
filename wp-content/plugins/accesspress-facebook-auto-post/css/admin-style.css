@@ -41,7 +41,7 @@ ul.asap-tabs-wrap {
 }
 .asap-network-field-wrap label {
     display: inline-block;
-    width: 175px;
+    width: 248px;
     font-size: 14px;
     font-weight: bold;
     vertical-align: top;
@@ -50,14 +50,15 @@ ul.asap-tabs-wrap {
 .asap-network-field-wrap {
     margin-bottom: 25px;
 }
-.asap-network-field input[type="text"] {
+.asap-network-field input[type="text"],
+.asap-network-field input[type="password"]{
     width: 500px;
     height:30px;
 }
 .asap-network-inner-wrap {
     border: 1px solid #ccc;
     padding: 10px;
-    min-height: 200px;
+    /*min-height: 200px;*/
     margin-bottom: 10px;
     background-color: white;
 }
@@ -403,4 +404,15 @@ a.upgrade-action-btn:hover {
 ul.price-wrap {
     font-size: 16px;
     line-height: 30px;
+}
+.asap-generated-access-token-wrapper iframe{
+        width: 500px;
+}
+#asap-button-template-floating{
+    width: 500px;
+}
+.asap-ajax-loader,.asap-ajax-loader1{
+    display: inline-block;
+    opacity: 0;
+    visibility: hidden;
 }
