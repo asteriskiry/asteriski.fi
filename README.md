@@ -13,7 +13,7 @@ Aloita komennolla:
 ```
 git clone --recurse-submodules https://github.com/asteriskiry/asteriski.fi
 ```
-Lataa tietokantadumppi (wp-dev-kanta.sql) Discord-kanavalta hakemistoon `asteriski.fi/mysql-dump`. Tämän jälkeen kannan täytyisi löytyä siis polusta `asteriski.fi/mysql-dump/wp-dev-kanta.sql`. Kun kanta on paikoillaan voit jatkaa:
+Lataa tietokanta.zip Discord-kanavalta. Pura sisältö (yksi tiedosto: wp-dev-kanta.sql) hakemistoon `asteriski.fi/mysql-dump`. Tämän jälkeen kannan täytyisi löytyä siis polusta `asteriski.fi/mysql-dump/wp-dev-kanta.sql`. Kun kanta on paikoillaan voit jatkaa:
 ```
 cd asteriski.fi
 docker-compose up -d
