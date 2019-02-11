@@ -3,3 +3,4 @@ wp-content/updraft
 wp-content/upgrade
 wp-content/uploads
 mysql-dump/*
+!mysql-dump/.gitkeep
