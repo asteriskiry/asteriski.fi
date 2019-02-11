@@ -5,6 +5,7 @@ services:
     image: mariadb:latest
     volumes:
       - db_data:/var/lib/mysql
+      - ./mysql-dump:/docker-entrypoint-initdb.d
     ports:
       - "6596:3306"
     restart: always
