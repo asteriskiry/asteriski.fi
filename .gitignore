@@ -4,3 +4,10 @@ wp-content/upgrade
 wp-content/uploads
 mysql-dump/*
 !mysql-dump/.gitkeep
+tags
+wp-content/plugins/wp-arkisto
+wp-content/plugins/wp-asteriski-admin-theme
+wp-content/plugins/wp-asteriski-auto-email
+wp-content/plugins/wp-tenttiarkisto
+wp-content/plugins/wp-poytakirjat
+wp-content/themes/wp-asteriski-theme
