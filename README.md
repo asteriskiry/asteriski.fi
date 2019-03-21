@@ -1,4 +1,5 @@
 # Asteriski.fi
+### Ohjeet ei ajan tasalla, kirjotan tänään
 Docker WordPress kehitysympäristö Asteriski ry:n tarpeisiin. Repo sisältää docker-compose-filen ja kehitettävät tai muuten relevantit wp-pluginit ja teemat. Itse kehittämämme pluginit ovat repossa git-submoduuleina (jotta voi pitää repoa repon sisällä), niitä ovat mm.
 - [wp-arkisto](https://github.com/asteriskiry/wp-arkisto)
 - [wp-asteriski-admin-theme](https://github.com/asteriskiry/wp-asteriski-admin-theme)
