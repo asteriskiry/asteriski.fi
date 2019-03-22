@@ -35,6 +35,14 @@ Käytä `install.sh` skriptin `--get` vipua vain ensimmäisellä kerralla. Voit 
 ```
 ./install.sh --update
 ```
+SQL-dumppi luetaan mysql-dump hakemistosta vain ensimmäisellä kerralla (kun mysql-kontissa ei ole yhtään tietokantaa). Jos haluat päivittää kannan täytyy esimerkiksi poistaa docker konttien tiedostot. Esim. näin (riippuu taas käyttöjärjestelmästä):
+```
+sudo systemctl stop docker
+sudo rm -rf /var/lib/docker
+sudo systemctl start docker
+cd asteriski.fi
+docker-compose up -d
+```
 wp-cli komentoja pääsee käyttämään esimerkin mukaisesti:
 ```
 docker-compose run --rm cli wp --info
