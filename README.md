@@ -9,6 +9,7 @@ Docker WordPress kehitysympäristö Asteriski ry:n tarpeisiin. Repo sisältää 
 - [wp-poytakirjat](https://github.com/asteriskiry/wp-poytakirjat)
 - [wp-asteriski-admin-theme](https://github.com/asteriskiry/wp-asteriski-admin-theme)
 - [wp-asteriski-auto-email](https://github.com/asteriskiry/wp-asteriski-auto-email)
+- [wp-asteriski-calendar](https://github.com/asteriskiry/wp-asteriski-calendar)
 #### Teema:
 - [wp-asteriski-theme](https://github.com/asteriskiry/wp-asteriski-theme)
 
@@ -27,7 +28,7 @@ docker-compose up -d
 ```
 Ensimmäisellä kerralla menee hetki. `docker-compose` -komento tosiaan roottina (sudo) tai lisää käyttäjäsi docker-ryhmään tai vastaavaan (vaihtelua käyttöjärjestelmästäsi riippuen). Jos tämä ei ole mahdollista, konsultoi [ilmojärjestelmän README.md:tä](https://github.com/asteriskiry/ilmot).
 
-Tämän jälkeen kehitysympäristösi pitäisi löytyä osoitteesta <http://localhost>. Pitäisi näyttää melko samalta kun live-sivusto. Ainoa mikä puuttuu niin suurin osa kuvista ym. mediasta sillä niitä oli n. 400MB edestä. Admin-puolelle pääset kirjautumaan osoitteessa <http://localhost/wp-admin>. Samat tunnarit mitkä live-sivustolla toimii. Jos ei sellaisia vielä ole, niin voit käyttää tunnusta `admin` salasanalla `admin`. Tämä ei luonnollisestikkaan toimi live-sivustolla.
+Tämän jälkeen kehitysympäristösi pitäisi löytyä osoitteesta <http://localhost>. Pitäisi näyttää melko samalta kuin (tuleva) live-sivusto. Ainoa mikä puuttuu niin suurin osa kuvista ym. mediasta sillä niitä oli n. 400MB edestä. Admin-puolelle pääset kirjautumaan osoitteessa <http://localhost/wp-admin>. Samat tunnarit mitkä live-sivustolla toimii. Jos ei sellaisia vielä ole, niin voit käyttää tunnusta `admin` salasanalla `admin`. Tämä ei luonnollisestikkaan toimi live-sivustolla.
 
 phpMyAdmin löytyy osoitteesta <http://localhost:8080>. Tunnukset löytyy docker-compose.yml tiedostosta.
 

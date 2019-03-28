@@ -31,6 +31,7 @@ else
             git clone https://github.com/asteriskiry/wp-poytakirjat.git wp-content/plugins/wp-poytakirjat
             git clone https://github.com/asteriskiry/wp-asteriski-admin-theme.git wp-content/plugins/wp-asteriski-admin-theme
             git clone https://github.com/asteriskiry/wp-asteriski-auto-email.git wp-content/plugins/wp-asteriski-auto-email
+            git clone https://github.com/asteriskiry/wp-asteriski-calendar.git wp-content/plugins/wp-asteriski-calendar
             git clone https://github.com/asteriskiry/wp-asteriski-theme.git wp-content/themes/wp-asteriski-theme
             exit 0
             ;;
@@ -46,6 +47,9 @@ else
             git pull
             cd "$REPOROOT"
             cd wp-content/plugins/wp-asteriski-auto-email
+            git pull
+            cd "$REPOROOT"
+            cd wp-content/plugins/wp-asteriski-calendar
             git pull
             cd "$REPOROOT"
             cd wp-content/themes/wp-asteriski-theme
