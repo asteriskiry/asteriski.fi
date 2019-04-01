@@ -1,7 +1,5 @@
 # Asteriski.fi
 
-*Hankkiuduttu eroon git-submoduuleista. Nyt omat riippuvuudet haetaan skriptillä.*
-
 Docker WordPress kehitysympäristö Asteriski ry:n tarpeisiin. Repo sisältää docker-compose-filen ja kehitettävät tai muuten relevantit wp-pluginit ja teemat. Itse kehittämämme pluginit ja teemat saadaan haettua mukana tulevalla asennusskriptillä. Niitä ovat:
 
 #### Pluginit:
