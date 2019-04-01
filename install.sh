@@ -17,6 +17,8 @@ help() {
     echo
 }
 
+REPOROOT=$(pwd)
+
 if [ "$#" -ne 1 ]; then
     help
     exit 1
@@ -32,11 +34,17 @@ else
             git clone https://github.com/asteriskiry/wp-asteriski-admin-theme.git wp-content/plugins/wp-asteriski-admin-theme
             git clone https://github.com/asteriskiry/wp-asteriski-auto-email.git wp-content/plugins/wp-asteriski-auto-email
             git clone https://github.com/asteriskiry/wp-asteriski-calendar.git wp-content/plugins/wp-asteriski-calendar
+            if command -v composer; then
+                cd wp-content/plugins/wp-asteriski-calendar
+                composer install
+                cd "$REPOROOT"
+            else
+                echo "Composer ei ole asennettuna. WP-asteriski-calendar ei tule toimimaan niinkuin pitää."
+            fi
             git clone https://github.com/asteriskiry/wp-asteriski-theme.git wp-content/themes/wp-asteriski-theme
             exit 0
             ;;
         --update)
-            REPOROOT=$(pwd)
             cd wp-content/plugins/wp-tenttiarkisto
             git pull
             cd "$REPOROOT"
@@ -51,6 +59,11 @@ else
             cd "$REPOROOT"
             cd wp-content/plugins/wp-asteriski-calendar
             git pull
+            if command -v composer; then
+                composer install
+            else
+                echo "Composer ei ole asennettuna. WP-asteriski-calendar ei tule toimimaan niinkuin pitää."
+            fi
             cd "$REPOROOT"
             cd wp-content/themes/wp-asteriski-theme
             git pull
