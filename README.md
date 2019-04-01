@@ -26,6 +26,8 @@ docker-compose up -d
 ```
 Ensimmäisellä kerralla menee hetki. `docker-compose` -komento tosiaan roottina (sudo) tai lisää käyttäjäsi docker-ryhmään tai vastaavaan (vaihtelua käyttöjärjestelmästäsi riippuen). Jos tämä ei ole mahdollista, konsultoi [ilmojärjestelmän README.md:tä](https://github.com/asteriskiry/ilmot).
 
+Jos haluat että `wp-asteriski-calendar` plugin toimisi myös, tarvitset myös [composerin](https://getcomposer.org/). Lisäksi tarvitset `credentials.json` tiedoston `wp-content/plugins/wp-asteriski-calendar/credentials/` hakemistoon. Saat sen Maksilta. Jos et halua voit vaan disabloida koko pluginin.
+
 Tämän jälkeen kehitysympäristösi pitäisi löytyä osoitteesta <http://localhost>. Pitäisi näyttää melko samalta kuin (tuleva) live-sivusto. Ainoa mikä puuttuu niin suurin osa kuvista ym. mediasta sillä niitä oli n. 400MB edestä. Admin-puolelle pääset kirjautumaan osoitteessa <http://localhost/wp-admin>. Samat tunnarit mitkä live-sivustolla toimii. Jos ei sellaisia vielä ole, niin voit käyttää tunnusta `admin` salasanalla `admin`. Tämä ei luonnollisestikkaan toimi live-sivustolla.
 
 phpMyAdmin löytyy osoitteesta <http://localhost:8080>. Tunnukset löytyy docker-compose.yml tiedostosta.
