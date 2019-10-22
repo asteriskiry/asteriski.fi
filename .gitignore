@@ -1,17 +1,6 @@
-wp-content/languages
-wp-content/updraft
-wp-content/upgrade
-mysql-dump/*
-!mysql-dump/.gitkeep
-tags
-wp-content/uploads/2017
-wp-content/uploads/2018
-wp-content/plugins/wp-arkisto
-wp-content/plugins/wp-asteriski-admin-theme
-wp-content/plugins/wp-asteriski-auto-email
-wp-content/plugins/wp-tenttiarkisto
-wp-content/plugins/wp-poytakirjat
-wp-content/plugins/wp-asteriski-calendar
-wp-content/themes/wp-asteriski-theme
+mysql-dump/
+wp-content/
+*.zip
 
-*
+# editors
+tags

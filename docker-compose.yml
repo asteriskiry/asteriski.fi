@@ -18,7 +18,7 @@ services:
   wordpress:
     build:
       context: ./
-      dockerfile: Dockerfile
+      # dockerfile: Dockerfile
     image: wordpress:latest
     depends_on:
       - db
@@ -34,6 +34,22 @@ services:
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_PREFIX: wp_
       WORDPRESS_DEBUG: "true"
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME',  "http://{$$_SERVER['HTTP_HOST']}");
+        define('WP_SITEURL', "http://{$$_SERVER['HTTP_HOST']}");
+        ob_start( 'ob_replace_home_url' );
+        function ob_replace_home_url( $$content ) {
+        $$home_urls = array(
+        'http://asteriski.fi',
+        'http://www.asteriski.fi',
+        'http://asteriski.utu.fi',
+        'https://asteriski.fi',
+        'https://www.asteriski.fi',
+        'https://asteriski.utu.fi',
+        );
+        $$content = str_replace( $$home_urls, WP_HOME, $$content );
+        return $$content;
+        }
 
   cli:
     image: wordpress:cli
