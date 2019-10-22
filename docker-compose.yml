@@ -16,9 +16,6 @@ services:
       MYSQL_PASSWORD: wordpress
 
   wordpress:
-    build:
-      context: ./
-      # dockerfile: Dockerfile
     image: wordpress:latest
     depends_on:
       - db
