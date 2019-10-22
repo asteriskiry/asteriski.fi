@@ -1,6 +1,6 @@
 # Asteriski.fi
 
-Docker WordPress kehitysympäristö Asteriski ry:n tarpeisiin. Repo sisältää docker-compose-filen ja kehitettävät tai muuten relevantit wp-pluginit ja teemat. Itse kehittämämme pluginit ja teemat saadaan haettua mukana tulevalla asennusskriptillä. Niitä ovat:
+Docker WordPress kehitysympäristö Asteriski ry:n sivuston kehittämistä varten. Repo sisältää tarvittavat tiedostot Dockerin ajamiseen. Teemat ja pluginit joita kehitämme tämän repon avulla:
 
 #### Pluginit:
 - [wp-tenttiarkisto](https://github.com/asteriskiry/wp-tenttiarkisto)
@@ -12,44 +12,50 @@ Docker WordPress kehitysympäristö Asteriski ry:n tarpeisiin. Repo sisältää 
 - [wp-asteriski-theme](https://github.com/asteriskiry/wp-asteriski-theme)
 
 ### Ohjeet
-Docker ja docker-compose tulisi olla asennettuna
+`Docker` ja `docker-compose` tulisi olla asennettuna (<https://docs.docker.com/install/#supported-platforms>).
 
 Aloita komennolla:
 ```
 git clone https://github.com/asteriskiry/asteriski.fi
 ```
-Lataa tietokanta.zip Discord-kanavalta/Google Drivestä. Pura sisältö (yksi tiedosto: wp-dev-kanta.sql) hakemistoon `asteriski.fi/mysql-dump`. Tämän jälkeen kannan täytyisi löytyä siis polusta `asteriski.fi/mysql-dump/wp-dev-kanta.sql`. Kun kanta on paikoillaan voit jatkaa:
+Lataa uusin `asteriskifi-docker-files-XX-XXXX.zip` Google Drivestä ja pura se `asteriski.fi`-kansioon. Kyseisessä zipissä on `wp-content` ja `mysql-dump` -kansiot. Tämän jälkeen `asteriski.fi`-kansion sisältä pitäisi löytyä nämä tiedostot:
 ```
-cd asteriski.fi
-./install.sh --get
-docker-compose up -d
+docker-compose.yml
+.git/
+.gitignore
+LICENSE
+mysql-dump/
+README.md
+update-plugins.sh
+wp-content/
 ```
-Ensimmäisellä kerralla menee hetki. `docker-compose` -komento tosiaan roottina (sudo) tai lisää käyttäjäsi docker-ryhmään tai vastaavaan (vaihtelua käyttöjärjestelmästäsi riippuen). Jos tämä ei ole mahdollista, konsultoi [ilmojärjestelmän README.md:tä](https://github.com/asteriskiry/ilmot).
 
-Jos haluat että `wp-asteriski-calendar` plugin toimisi myös, tarvitset myös [composerin](https://getcomposer.org/). Lisäksi tarvitset `credentials.json` tiedoston `wp-content/plugins/wp-asteriski-calendar/credentials/` hakemistoon. Saat sen Maksilta. Jos et halua voit vaan disabloida koko pluginin.
+Kun tiedostot ovat paikallaan voit ajaa repositorion juuresta (`asteriski.fi`-kansiosta) komennon:
+```
+docker-compose up
+```
 
-Tämän jälkeen kehitysympäristösi pitäisi löytyä osoitteesta <http://localhost>. Pitäisi näyttää melko samalta kuin live-sivusto. Ainoa mikä puuttuu niin suurin osa kuvista ym. mediasta sillä niitä oli n. 400MB edestä. Admin-puolelle pääset kirjautumaan osoitteessa <http://localhost/wp-admin>. Samat tunnarit mitkä live-sivustolla toimii. Jos ei sellaisia vielä ole, niin voit käyttää tunnusta `admin` salasanalla `admin`. Tämä ei luonnollisestikkaan toimi live-sivustolla.
+Tämän jälkeen kehitysympäristösi pitäisi löytyä osoitteesta <http://localhost>. Pitäisi näyttää samalta kuin live-sivusto. Admin-puolelle pääset kirjautumaan osoitteessa <http://localhost/wp-admin>. Voit luoda itsellesi admin-oikedet omaavan tunnuksen esimerkiksi komennolla:
+```
+docker-compose run --rm cli wp user create admin admin@example.com --role=administrator --user_pass=admin
+```
 
-phpMyAdmin löytyy osoitteesta <http://localhost:8080>. Tunnukset löytyy docker-compose.yml tiedostosta.
+Voit päivittää kaikki itse kehittämämme repot ajan tasalle komennolla:
+```
+./update-plugins.sh
+```
 
-Käytä `install.sh` skriptin `--get` vipua vain ensimmäisellä kerralla. Voit päivittää repot ajan tasalle komennolla:
+Jos haluat päivittää Google Drivestä saadut tiedostot helpointa on poistaa `wp-content` ja `mysql-dump` -kansiot ja korvata ne uusilla. Tämän jälkeen poista kaikki Docker-tiedostot komennolla (Tämä poistaa kaikkien konttien kaikki tiedostot):
 ```
-./install.sh --update
-```
-SQL-dumppi luetaan mysql-dump hakemistosta vain ensimmäisellä kerralla (kun mysql-kontissa ei ole yhtään tietokantaa). Jos haluat päivittää kannan täytyy esimerkiksi poistaa docker konttien tiedostot. Esim. näin (riippuu taas käyttöjärjestelmästä)(Tämä poistaa sitten kaikkien docker-konttiesi tiedostot):
-```
-sudo systemctl stop docker
-sudo rm -rf /var/lib/docker
-sudo systemctl start docker
-cd asteriski.fi
-docker-compose up -d
-```
-wp-cli komentoja pääsee käyttämään esimerkin mukaisesti:
-```
-docker-compose run --rm cli wp --info
+docker system prune -a --volumes
 ```
 
 Ideana olisi että tähän repoon ei tehtäisi muutoksia muuta kuin ylläpidollisista syistä. Kehitys tapahtuisi omissa pluginien/teemojen repoissa. Kun olet esim. repon hakemistossa `asteriski.fi/wp-content/plugins/wp-tenttiarkisto` toimii homma kuten olisit tavallisesti WP-Tenttiarkisto -repossa eli muutokset menevät WP-Tenttiarkisto -repoon, ei tähän.
+
+### Muuta
+- phpMyAdmin löytyy osoitteesta <http://localhost:8080>. Tunnukset löytyy `docker-compose.yml`-tiedostosta.
+- Jos tarvitsee testailla sähköpostienlähetystoimintoja kannattaa asentaa [wp-mail-catcher](https://wordpress.org/plugins/wp-mail-catcher/)-plugin.
+- Tämä on käytännössä täysi kopio live-sivustosta, joten kehitystä varten voi olla järkevä ottaa pois käytöstä tiettyjä optimointiplugineja kuten `autoptimize` ja `nginx-helper`.
 
 ### Apua
 - <https://docs.docker.com/>
